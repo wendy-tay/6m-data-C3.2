@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Better, Trustworthy Models — Visualized</title>
+<style>
+  :root {
+    --bg: #0f1220; --panel: #171a2e; --panel-2: #1f2340; --ink: #e7e9f7;
+    --ink-dim: #9aa0c3; --rule: #2a2f55; --accent: #ffd166; --accent-2: #ef476f;
+    --accent-3: #06d6a0; --accent-4: #118ab2; --muted: #3b4170; --code-bg: #0b0e1c;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", "Menlo", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); }
+  body { min-height: 100vh; padding: 32px 20px 80px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: clamp(30px, 5vw, 46px); margin: 0; letter-spacing: -0.02em; font-weight: 700; }
+  header h1 em { color: var(--accent); font-style: italic; }
+  header .subtitle { color: var(--ink-dim); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 10px; }
+  nav.tabs { display: flex; justify-content: center; gap: 8px; margin: 28px 0 36px; flex-wrap: wrap; }
+  nav.tabs button { background: var(--panel); color: var(--ink-dim); border: 1px solid var(--rule); padding: 10px 18px; border-radius: 999px; font: 500 14px var(--font-sans); cursor: pointer; transition: all 0.15s; }
+  nav.tabs button:hover { color: var(--ink); border-color: var(--muted); }
+  nav.tabs button.active { background: var(--accent); color: #1a1404; border-color: var(--accent); }
+  section.part { display: none; }
+  section.part.active { display: block; animation: fade 0.3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .part-label { color: var(--ink-dim); letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px; }
+  h2.headline { font-size: clamp(24px, 3.5vw, 34px); margin: 0 0 12px; font-weight: 600; letter-spacing: -0.01em; }
+  h2.headline em { color: var(--accent); font-style: italic; }
+  p.intro { color: var(--ink-dim); font-size: 16px; line-height: 1.6; max-width: 800px; margin: 0 0 24px; }
+  p.intro code { color: var(--ink); background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font: 13px var(--font-mono); }
+  .scenario { background: linear-gradient(135deg, rgba(6,214,160,0.08), rgba(17,138,178,0.08)); border: 1px solid rgba(6,214,160,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 22px; font-size: 14px; }
+  .scenario strong { color: var(--accent-3); }
+  .panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+  .panel h3 { margin: 0 0 16px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; }
+  .input-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .input-row label { font: 500 13px var(--font-mono); color: var(--ink-dim); }
+  input[type=range] { accent-color: var(--accent); width: 240px; }
+  .result-label { color: var(--ink-dim); font-size: 12px; margin: 14px 0 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .result { background: var(--code-bg); border-radius: 8px; padding: 14px 18px; font: 600 18px var(--font-mono); color: var(--accent); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 13px; color: var(--ink-dim); }
+  .legend .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  .toggle-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .toggle { background: var(--panel-2); color: var(--ink-dim); border: 1px solid var(--rule); padding: 10px 16px; border-radius: 10px; font: 500 14px var(--font-sans); cursor: pointer; transition: all 0.15s; }
+  .toggle.on { background: var(--accent); color: #1a1404; border-color: var(--accent); }
+  .bar-track { background: var(--code-bg); border-radius: 8px; height: 34px; position: relative; overflow: hidden; margin-bottom: 6px; }
+  .bar-fill { height: 100%; border-radius: 8px; transition: width 0.4s ease, background 0.3s; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font: 600 13px var(--font-mono); color: #1a1404; }
+  svg { width: 100%; height: auto; display: block; }
+  .chart-cap { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; color:var(--ink-dim); margin-top:8px;}
+  .verdict { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height:1.5; }
+  .verdict.good { background: rgba(6,214,160,0.10); border: 1px solid rgba(6,214,160,0.3); }
+  .verdict.warn { background: rgba(239,71,111,0.10); border: 1px solid rgba(239,71,111,0.3); }
+  footer { margin-top: 60px; text-align: center; color: var(--ink-dim); font-size: 12px; letter-spacing: 0.08em; }
+  footer .dot { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Make It Better, <em>Make It Trustworthy</em></h1>
+    <div class="subtitle">HDB Price Model · L06 Coaching Aid</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="p1">1 · How wrong? (MAE)</button>
+    <button class="tab-btn" data-tab="p2">2 · Adding features</button>
+    <button class="tab-btn" data-tab="p3">3 · Overfitting</button>
+  </nav>
+
+  <!-- ============ PART 1: MAE ============ -->
+  <section class="part active" id="p1">
+    <div class="part-label">Part 1 — Scoring the model</div>
+    <h2 class="headline">Every prediction has an <em>error</em>.</h2>
+    <p class="intro">
+      A model never nails the price exactly. <code>MAE</code> (Mean Absolute Error) is the
+      <strong>average gap</strong> between predicted and actual price across many flats.
+      Move the slider to see how a model that's "tighter" lowers the average dollar error.
+    </p>
+    <div class="scenario">
+      <strong>Scenario:</strong> Five real flats sold last month. Your model guessed each one.
+      How far off was it, on average? That single dollar number is your model's report card.
+    </div>
+    <div class="panel">
+      <h3>Controls</h3>
+      <div class="input-row">
+        <label>Model tightness</label>
+        <input type="range" id="p1-slider" min="0" max="100" value="60" />
+        <span id="p1-tight" style="font:500 13px var(--font-mono);color:var(--accent)"></span>
+      </div>
+      <svg id="p1-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="result-label">Mean Absolute Error</div>
+      <div class="result" id="p1-mae">—</div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--accent-3)"></span>Actual price</span>
+        <span><span class="swatch" style="background:var(--accent)"></span>Predicted price</span>
+        <span><span class="swatch" style="background:var(--accent-2)"></span>Error (the gap)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PART 2: Adding features ============ -->
+  <section class="part" id="p2">
+    <div class="part-label">Part 2 — More relevant information</div>
+    <h2 class="headline">Give the model <em>more to look at</em>.</h2>
+    <p class="intro">
+      Your L05 model only knew size, lease year, and floor. But price also depends on
+      <strong>what kind of flat</strong> it is and <strong>where</strong> it sits.
+      Toggle features on and watch the error bar shrink.
+    </p>
+    <div class="scenario">
+      <strong>Scenario:</strong> A 5-room in Bishan and a 2-room in Yishun can be the same size.
+      Without "flat type" and "town", the model treats them as identical. Add those clues and it gets sharper.
+    </div>
+    <div class="panel">
+      <h3>Features the model can see</h3>
+      <div class="toggle-row" id="p2-toggles">
+        <button class="toggle on" data-locked="1" data-gain="0">Floor area</button>
+        <button class="toggle on" data-locked="1" data-gain="0">Lease year</button>
+        <button class="toggle on" data-locked="1" data-gain="0">Floor level</button>
+        <button class="toggle" data-gain="34">+ Flat type</button>
+        <button class="toggle" data-gain="22">+ Town</button>
+      </div>
+      <p style="color:var(--ink-dim);font-size:12px;margin:4px 0 18px">First three are your original model (always on). Click the last two to add them.</p>
+      <div class="result-label">Average error (MAE) — lower is better</div>
+      <div class="bar-track"><div class="bar-fill" id="p2-bar"></div></div>
+      <div class="verdict good" id="p2-verdict"></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 3: Overfitting ============ -->
+  <section class="part" id="p3">
+    <div class="part-label">Part 3 — Choosing a model honestly</div>
+    <h2 class="headline">Learning, not <em>memorising</em>.</h2>
+    <p class="intro">
+      A fancier model can fit the training flats almost perfectly — but flop on new ones.
+      We catch this by comparing error on flats it <strong>trained on</strong> vs flats it has
+      <strong>never seen</strong>. Slide model complexity and watch the two lines.
+    </p>
+    <div class="scenario">
+      <strong>Scenario:</strong> A student who memorises past exam papers scores 100% on those
+      papers but fails new questions. A model that "memorises" training flats does the same.
+      The gap between the two lines is the warning sign.
+    </div>
+    <div class="panel">
+      <h3>Controls</h3>
+      <div class="input-row">
+        <label>Model complexity</label>
+        <input type="range" id="p3-slider" min="0" max="100" value="35" />
+        <span id="p3-label" style="font:500 13px var(--font-mono);color:var(--accent)"></span>
+      </div>
+      <svg id="p3-svg" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="chart-cap">
+        <span><span class="swatch" style="background:var(--accent-4)"></span>Error on training flats</span>
+        <span><span class="swatch" style="background:var(--accent-2)"></span>Error on unseen flats (what matters)</span>
+      </div>
+      <div class="verdict" id="p3-verdict"></div>
+    </div>
+  </section>
+
+  <footer>
+    Module 3 · Machine Learning & GenAI <span class="dot">·</span> L06 Coaching Aid <span class="dot">·</span> <span id="ready">Ready</span>
+  </footer>
+</div>
+
+<script>
+// ---- tabs ----
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.part').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== PART 1: MAE =====
+const P1_ACTUAL = [320, 480, 410, 560, 250]; // thousands S$
+const P1_NAMES = ['2-rm AMK','4-rm Bishan','3-rm Bedok','5-rm Tampines','2-rm Yishun'];
+function renderP1() {
+  const t = +document.getElementById('p1-slider').value; // 0..100
+  document.getElementById('p1-tight').textContent = t + '%';
+  // higher tightness -> smaller errors. deterministic pseudo-offsets per flat.
+  const base = [1, -1, 0.7, -0.8, 1.1];
+  const spread = (100 - t) / 100 * 140; // up to 140k off when loose
+  const preds = P1_ACTUAL.map((a,i) => a + base[i]*spread*(0.5 + ((i*37)%50)/100));
+  const svg = document.getElementById('p1-svg');
+  const W=700,H=260,padL=40,padB=40,padT=20,gw=(W-padL-20)/P1_ACTUAL.length;
+  const maxV=720;
+  const sy=v=>H-padB-(v/maxV)*(H-padB-padT);
+  let s='';
+  let totalErr=0;
+  P1_ACTUAL.forEach((a,i)=>{
+    const cx=padL+gw*i+gw/2;
+    const p=preds[i];
+    const err=Math.abs(a-p); totalErr+=err;
+    // error band
+    s+=`<line x1="${cx}" y1="${sy(a)}" x2="${cx}" y2="${sy(p)}" stroke="var(--accent-2)" stroke-width="6" stroke-linecap="round" opacity="0.6"/>`;
+    // actual dot
+    s+=`<circle cx="${cx}" cy="${sy(a)}" r="7" fill="var(--accent-3)"/>`;
+    // predicted dot
+    s+=`<circle cx="${cx}" cy="${sy(p)}" r="7" fill="var(--accent)"/>`;
+    s+=`<text x="${cx}" y="${H-padB+18}" fill="var(--ink-dim)" font-size="10" text-anchor="middle" font-family="monospace">${P1_NAMES[i].split(' ')[0]}</text>`;
+  });
+  // baseline axis
+  s+=`<line x1="${padL}" y1="${H-padB}" x2="${W-10}" y2="${H-padB}" stroke="var(--rule)"/>`;
+  svg.innerHTML=s;
+  const mae=Math.round(totalErr/P1_ACTUAL.length);
+  document.getElementById('p1-mae').textContent = `S$${(mae*1000).toLocaleString()}  (avg gap across 5 flats)`;
+}
+document.getElementById('p1-slider').addEventListener('input',renderP1);
+renderP1();
+
+// ===== PART 2: adding features =====
+const P2_BASE = 78; // k MAE with 3 features
+function renderP2(){
+  let mae=P2_BASE;
+  document.querySelectorAll('#p2-toggles .toggle').forEach(b=>{
+    if(b.classList.contains('on') && !b.dataset.locked) mae-=+b.dataset.gain;
+  });
+  const pct=Math.max(8, mae/P2_BASE*100);
+  const bar=document.getElementById('p2-bar');
+  bar.style.width=pct+'%';
+  bar.textContent=`S$${(mae*1000).toLocaleString()}`;
+  bar.style.background = mae>=70?'var(--accent-2)': mae>=45?'var(--accent)':'var(--accent-3)';
+  const v=document.getElementById('p2-verdict');
+  const saved=P2_BASE-mae;
+  if(saved===0){v.className='verdict warn';v.textContent='This is your starting point — only the original 3 features. Try adding the clues below.';}
+  else{v.className='verdict good';v.innerHTML=`Error dropped by <strong>S$${(saved*1000).toLocaleString()}</strong>. More relevant information made the model sharper.`;}
+}
+document.querySelectorAll('#p2-toggles .toggle').forEach(b=>{
+  b.addEventListener('click',()=>{ if(b.dataset.locked) return; b.classList.toggle('on'); renderP2(); });
+});
+renderP2();
+
+// ===== PART 3: overfitting =====
+function renderP3(){
+  const x=+document.getElementById('p3-slider').value/100; // 0 simple .. 1 complex
+  // training error: keeps falling toward 0 as complexity rises
+  const trainErr = 95*Math.exp(-2.4*x) + 4;
+  // test error: U-shape — falls then rises (overfit)
+  const testErr = 95*Math.exp(-2.6*x) + 8 + 70*Math.pow(Math.max(0,x-0.45),2)*2.2;
+  const svg=document.getElementById('p3-svg');
+  const W=700,H=300,padL=46,padB=40,padT=20;
+  const sx=u=>padL+u*(W-padL-15);
+  const sy=v=>H-padB-(v/110)*(H-padB-padT);
+  let train='',test='';
+  for(let i=0;i<=100;i++){const u=i/100;
+    const te=95*Math.exp(-2.4*u)+4;
+    const ve=95*Math.exp(-2.6*u)+8+70*Math.pow(Math.max(0,u-0.45),2)*2.2;
+    train+=`${i?'L':'M'}${sx(u).toFixed(1)},${sy(te).toFixed(1)} `;
+    test +=`${i?'L':'M'}${sx(u).toFixed(1)},${sy(Math.min(ve,110)).toFixed(1)} `;
+  }
+  let s='';
+  s+=`<line x1="${padL}" y1="${H-padB}" x2="${W-15}" y2="${H-padB}" stroke="var(--rule)"/>`;
+  s+=`<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--rule)"/>`;
+  s+=`<text x="${(padL+W)/2}" y="${H-8}" fill="var(--ink-dim)" font-size="11" text-anchor="middle">simple  →  complex</text>`;
+  s+=`<text x="14" y="${(padT+H-padB)/2}" fill="var(--ink-dim)" font-size="11" transform="rotate(-90 14 ${(padT+H-padB)/2})" text-anchor="middle">error</text>`;
+  s+=`<path d="${train}" fill="none" stroke="var(--accent-4)" stroke-width="3"/>`;
+  s+=`<path d="${test}" fill="none" stroke="var(--accent-2)" stroke-width="3"/>`;
+  // marker line
+  s+=`<line x1="${sx(x)}" y1="${padT}" x2="${sx(x)}" y2="${H-padB}" stroke="var(--accent)" stroke-dasharray="4 4" opacity="0.7"/>`;
+  s+=`<circle cx="${sx(x)}" cy="${sy(trainErr)}" r="6" fill="var(--accent-4)"/>`;
+  s+=`<circle cx="${sx(x)}" cy="${sy(Math.min(testErr,110))}" r="6" fill="var(--accent-2)"/>`;
+  svg.innerHTML=s;
+  const lbl=x<0.33?'Simple (e.g. Linear Regression)':x<0.7?'Balanced (e.g. tuned Random Forest)':'Very complex (deep / many trees)';
+  document.getElementById('p3-label').textContent=lbl;
+  const gap=testErr-trainErr;
+  const v=document.getElementById('p3-verdict');
+  if(x<0.2){v.className='verdict warn';v.innerHTML='<strong>Underfitting:</strong> too simple — both errors are high. The model misses real patterns.';}
+  else if(gap<22){v.className='verdict good';v.innerHTML='<strong>Sweet spot:</strong> test error is low and close to training error. This is the model to ship.';}
+  else{v.className='verdict warn';v.innerHTML=`<strong>Overfitting:</strong> training error is tiny but unseen-flat error is much higher (gap S$${Math.round(gap)}k). It memorised, it didn't learn.`;}
+}
+document.getElementById('p3-slider').addEventListener('input',renderP3);
+renderP3();
+</script>
+</body>
+</html>
